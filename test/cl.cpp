@@ -6,16 +6,20 @@
 #include <CL/ProgramCL.h>
 
 TEST(CL, ContextDefault) {
-	GPU::CL::PlatformCL def;
-	std::cout << def.GetInfo().Name << std::endl;
+    try {
+    GPU::CL::PlatformCL def;
+    std::cout << def.GetInfo().Name << std::endl;
 
-	auto context = GPU::CL::PlatformCL().NewDefaultContext();
-	const auto& d = context->Device();
+    auto context = def.NewDefaultContext();
+    const auto& d = context->Device();
 	std::cout << "Vendor: " << d.GetInfo().Vendor << std::endl;
 	std::cout << "Max buffer size: " << d.GetInfo().MaxBufferSize << std::endl;
 	ASSERT_EQ(d.GetInfo().Type, CL_DEVICE_TYPE_GPU);
 
-	ASSERT_TRUE(d.IsDefault());
+    ASSERT_TRUE(d.IsDefault());
+    } catch (const cl::Error& err) {
+        TRACE(err.err(), err.what());
+    }
 }
 
 TEST(CL, ContextMulti) {
@@ -41,7 +45,7 @@ TEST(CL, ContextMulti) {
 }
 
 TEST(CL, ContextComplete) {
-	GPU::CL::ContextCL::Ptr context = GPU::CL::PlatformCL().NewCompleteContext();
+    GPU::CL::ContextCL::Ptr context = GPU::CL::PlatformCL().NewCompleteContext();
 
 	auto gpus = context->GPUs();
 	for (auto d : gpus) {
@@ -56,13 +60,13 @@ TEST(CL, ContextComplete) {
 	}
 }
 
+typedef struct {
+    cl_float4 vec;
+} UserObj;
+
 TEST(CL, SimpleUserObject) {
 	try {
 		GPU::CL::ContextCL::Ptr gpuContext(new GPU::CL::ContextCL);
-
-		struct UserObj {
-			cl_float4 vec;
-		};
 
 		GPU::CL::ProgramCL::Ptr program = gpuContext->NewProgramFromSource(
 			U_KERNEL_CL(
@@ -157,7 +161,7 @@ TEST(CL, Buffer) {
 	}
 
 
-	unsigned long long size = 4 * 3072 * 3072;
+    unsigned long long size = 4 * 1024 * 1024;
 	std::vector<GPU::CL::BufferCL<cl_float>::Ptr> list;
 	for (int i = 0; i < 2; i++) {
 		try {
@@ -190,7 +194,7 @@ TEST(CL, Queue) {
 
 		std::cout << " ** Allocating.. ";
 
-		unsigned long long size = 3072;
+        unsigned long long size = 1024;
 		auto input = GPU::CL::ManagedBuffer<float>::New(new float[4 * size * size], 4 * size * size);
 		GPU::CL::BufferCL<float>::Ptr buf = gpuContext.NewBuffer<float>(input);
 		std::cout << 4 * size * size << " floats, " << input->RawSize() << " bytes." << std::endl;
@@ -231,12 +235,12 @@ TEST(CL, Queue) {
 		cq.ReadBufferRect(*buf, rect);
 		ASSERT_EQ(input->At(0), 0.0);
 		ASSERT_EQ(input->At(3), 0.0);
-		ASSERT_EQ(input->At(4), 4 * 3072.0 + 1);
+        ASSERT_EQ(input->At(4), 4 * size + 1);
 
 		rect.DeviceOrigin(1, 1);
 		rect.HostOrigin(2, 0);
 		cq.WriteBufferRect(*buf, rect);
-		ASSERT_EQ(input->At(4), 4 * 3072.0 + 1);
+        ASSERT_EQ(input->At(4), 4 * size + 1);
 		cq.FillBuffer(*buf, 2.0f);
 		cq.ReadBufferRect(*buf, rect);
 		ASSERT_EQ(input->At(4), 2);

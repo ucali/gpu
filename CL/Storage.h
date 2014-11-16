@@ -145,7 +145,7 @@ namespace GPU {
 
 		virtual void Release() {
 			_vec.clear();
-			_vec.swap(std::vector<T>());
+            _vec = std::vector<T>();
 		}
 
         static typename Storage<T>::Ptr New(size_t s) {
