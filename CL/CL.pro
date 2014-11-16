@@ -1,5 +1,5 @@
 TEMPLATE = lib
-CONFIG += static
+CONFIG += staticlib
 CONFIG -= app_bundle
 CONFIG -= qt
 
