@@ -25,12 +25,7 @@ namespace CL {
 		}
 
 		ContextCL(const std::vector<cl::Device> & d) : _context(nullptr) {
-			if (!d.size()) {
-				throw std::runtime_error("No device");
-			}
-
 			_context.reset(new cl::Context(d));
-
 			for (const auto& dev : d) {
 				_device.emplace_back(*_context, dev);
 			}
