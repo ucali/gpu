@@ -7,16 +7,16 @@
 
 TEST(CL, ContextDefault) {
     try {
-    GPU::CL::PlatformCL def;
-    std::cout << def.GetInfo().Name << std::endl;
+		GPU::CL::PlatformCL def;
+		std::cout << def.GetInfo().Name << std::endl;
 
-    auto context = def.NewDefaultContext();
-    const auto& d = context->Device();
-	std::cout << "Vendor: " << d.GetInfo().Vendor << std::endl;
-	std::cout << "Max buffer size: " << d.GetInfo().MaxBufferSize << std::endl;
-	ASSERT_EQ(d.GetInfo().Type, CL_DEVICE_TYPE_GPU);
+		auto context = def.NewDefaultContext();
+		const auto& d = context->Device();
+		std::cout << "Vendor: " << d.GetInfo().Vendor << std::endl;
+		std::cout << "Max buffer size: " << d.GetInfo().MaxBufferSize << std::endl;
+		ASSERT_EQ(d.GetInfo().Type, CL_DEVICE_TYPE_GPU);
 
-    ASSERT_TRUE(d.IsDefault());
+		ASSERT_TRUE(d.IsDefault());
     } catch (const cl::Error& err) {
         TRACE(err.err(), err.what());
     }
@@ -47,16 +47,19 @@ TEST(CL, ContextMulti) {
 TEST(CL, ContextComplete) {
     GPU::CL::ContextCL::Ptr context = GPU::CL::PlatformCL().NewCompleteContext();
 
+	std::for_each(context->ConstBegin(), context->ConstEnd(), [](const GPU::CL::DeviceCL& d){
+		std::cout << " ** Vendor: " << d.GetInfo().Vendor << std::endl;
+		std::cout << " ** Max buffer size: " << d.GetInfo().MaxBufferSize << std::endl;
+	});
+
 	auto gpus = context->GPUs();
 	for (auto d : gpus) {
-		std::cout << " ** Vendor: " << d->GetInfo().Vendor << std::endl;
-		std::cout << " ** Max buffer size: " << d->GetInfo().MaxBufferSize << std::endl;
+		std::cout << " ** Vendor: " << d.GetInfo().Vendor << ", ID: " << d.GetInfo().DeviceVendorId << std::endl;
 	}
 
 	auto cpus = context->CPUs();
 	for (auto d : cpus) {
-		std::cout << " ** Vendor: " << d->GetInfo().Vendor << std::endl;
-		std::cout << " ** Max buffer size: " << d->GetInfo().MaxBufferSize << std::endl;
+		std::cout << " ** Vendor: " << d.GetInfo().Vendor << ", ID: " << d.GetInfo().DeviceVendorId << std::endl;
 	}
 }
 

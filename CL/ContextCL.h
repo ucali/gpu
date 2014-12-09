@@ -13,12 +13,15 @@ namespace CL {
 		typedef std::shared_ptr<ContextCL> Ptr;
 		typedef std::unique_ptr<ContextCL> UPtr;
 
+		typedef std::vector<DeviceCL>::iterator DeviceIterator;
+		typedef std::vector<DeviceCL>::const_iterator ConstDeviceIterator;
+
 		ContextCL() : _context(nullptr) {
 			std::vector<cl::Device> c;
 			c.push_back(cl::Device::getDefault());
 			_context.reset(new cl::Context(c));
 
-			_device.emplace_back(new DeviceCL(*_context, cl::Device::getDefault()));
+			_device.emplace_back(*_context, cl::Device::getDefault());
 		}
 
 		ContextCL(const std::vector<cl::Device> & d) : _context(nullptr) {
@@ -29,22 +32,29 @@ namespace CL {
 			_context.reset(new cl::Context(d));
 
 			for (const auto& dev : d) {
-				_device.emplace_back(new DeviceCL(*_context, dev));
+				_device.emplace_back(*_context, dev);
 			}
 		}
 
 		const cl::Context& Get() const { return *_context; }
 
-		const DeviceCL& Device() const { return *_device.at(0); }
-		DeviceCL& Device() { return *_device.at(0); }
+		const DeviceCL& Device() const { return _device.at(0); }
+		DeviceCL& Device() { return _device.at(0); }
 
-		const std::vector<DeviceCL::Ptr>& Devices() const { return _device; }
-		std::vector<DeviceCL::Ptr>& DeviceList() { return _device; }
+		const std::vector<DeviceCL>& DeviceList() const { return _device; }
+		std::vector<DeviceCL>& DeviceList() { return _device; }
 
-		std::vector<DeviceCL::Ptr> GPUs();
-		const DeviceCL& GPU();
-		std::vector<DeviceCL::Ptr> CPUs();
-		const DeviceCL& CPU();
+		std::vector<DeviceCL> GPUs();
+		std::vector<DeviceCL> CPUs();
+
+		const DeviceCL& GPU() const;
+		const DeviceCL& CPU() const;
+
+		DeviceIterator Begin() { return _device.begin(); }
+		DeviceIterator End() { return _device.end(); }
+
+		ConstDeviceIterator ConstBegin() const { return _device.cbegin(); }
+		ConstDeviceIterator ConstEnd() const { return _device.cend(); }
 		
 		template <typename T>
         typename BufferCL<T>::Ptr NewBuffer(typename Storage<T>::Ptr buf, const cl_mem_flags& f = U_COPY_READ_WRITE) const {
@@ -67,7 +77,7 @@ namespace CL {
 		ProgramCL::Ptr NewProgramFromSource(const std::string& kernel);
 
 	private:
-		std::vector<DeviceCL::Ptr> _device;
+		std::vector<DeviceCL> _device;
 
 		std::unique_ptr<cl::Context> _context;
 
@@ -105,42 +115,42 @@ namespace CL {
 		return std::make_shared<ProgramCL>(cl::Program(c_, kernel, false));
 	}
 
-	std::vector<DeviceCL::Ptr> ContextCL::GPUs() {
-		std::vector<DeviceCL::Ptr> t_;
-		for (const auto& d : Devices()) {
-			if (d->GetInfo().Type == CL_DEVICE_TYPE_GPU) {
+	std::vector<DeviceCL> ContextCL::GPUs() {
+		std::vector<DeviceCL> t_;
+		for (const DeviceCL& d : DeviceList()) {
+			if (d.GetInfo().Type == CL_DEVICE_TYPE_GPU) {
 				t_.push_back(d);
 			}
 		}
 		return std::move(t_);
 	}
 
-	const DeviceCL& ContextCL::GPU() {
-		for (const auto& d : Devices()) {
-			if (d->GetInfo().Type == CL_DEVICE_TYPE_GPU) {
-				return *d;
+	const DeviceCL& ContextCL::GPU() const {
+		for (const DeviceCL& d : DeviceList()) {
+			if (d.GetInfo().Type == CL_DEVICE_TYPE_GPU) {
+				return d;
 			}
 		}
-		throw std::runtime_error("0 gpus");
+		throw std::runtime_error("No gpu found");
 	}
 
-	std::vector<DeviceCL::Ptr> ContextCL::CPUs() {
-		std::vector<DeviceCL::Ptr> t_;
-		for (const auto& d : Devices()) {
-			if (d->GetInfo().Type == CL_DEVICE_TYPE_CPU) {
+	std::vector<DeviceCL> ContextCL::CPUs() {
+		std::vector<DeviceCL> t_;
+		for (const DeviceCL& d : DeviceList()) {
+			if (d.GetInfo().Type == CL_DEVICE_TYPE_CPU) {
 				t_.push_back(d);
 			}
 		}
 		return std::move(t_);
 	}
 
-	const DeviceCL& ContextCL::CPU() {
-		for (const auto& d : Devices()) {
-			if (d->GetInfo().Type == CL_DEVICE_TYPE_CPU) {
-				return *d;
+	const DeviceCL& ContextCL::CPU() const {
+		for (const DeviceCL& d : DeviceList()) {
+			if (d.GetInfo().Type == CL_DEVICE_TYPE_CPU) {
+				return d;
 			}
 		}
-		throw std::runtime_error("0 gpus");
+		throw std::runtime_error("No cpu found");
 	}
 
 	class PlatformCL {
