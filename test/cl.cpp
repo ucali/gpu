@@ -47,24 +47,25 @@ TEST(CL, ContextMulti) {
 TEST(CL, ContextComplete) {
     GPU::CL::ContextCL::Ptr context = GPU::CL::PlatformCL().NewCompleteContext();
 
-	std::for_each(context->ConstBegin(), context->ConstEnd(), [](const GPU::CL::DeviceCL& d){
+
+	size_t gpuNum = 0, cpuNum = 0;
+	std::for_each(context->ConstBegin(), context->ConstEnd(), [&gpuNum, &cpuNum](const GPU::CL::DeviceCL& d){
 		std::cout << " ** Vendor: " << d.GetInfo().Vendor << std::endl;
 		std::cout << " ** Max buffer size: " << d.GetInfo().MaxBufferSize << std::endl;
+
+		d.GetInfo().Type == CL_DEVICE_TYPE_GPU ? gpuNum++ : cpuNum++;
 	});
 
 	auto gpus = context->GPUs();
-	for (auto d : gpus) {
-		std::cout << " ** Vendor: " << d.GetInfo().Vendor << ", ID: " << d.GetInfo().DeviceVendorId << std::endl;
-	}
+	ASSERT_EQ(gpus.size(), gpuNum);
 
 	auto cpus = context->CPUs();
-	for (auto d : cpus) {
-		std::cout << " ** Vendor: " << d.GetInfo().Vendor << ", ID: " << d.GetInfo().DeviceVendorId << std::endl;
-	}
+	ASSERT_EQ(cpus.size(), cpuNum);
 }
 
 typedef struct {
     cl_float4 vec;
+	cl_float input;
 } UserObj;
 
 TEST(CL, SimpleUserObject) {
@@ -73,10 +74,20 @@ TEST(CL, SimpleUserObject) {
 
 		GPU::CL::ProgramCL::Ptr program = gpuContext->NewProgramFromSource(
 			U_KERNEL_CL(
+		
 				typedef struct {
 					float4 vec;
+					float input;
 				} UserObj;
-				__kernel void empty(__global UserObj* obj) {}
+
+			void func(__global UserObj* obj) {
+					obj[0].vec = 1.0f;
+					obj[0].input = 1.0f;
+				}
+
+				__kernel void empty(__global UserObj* obj) {
+					func(obj);
+				}
 			)
 		);
 
@@ -89,6 +100,12 @@ TEST(CL, SimpleUserObject) {
 		auto storage = GPU::CL::RawPointer<UserObj>::New(obj, 1024);
 		auto buf = gpuContext->NewBuffer<UserObj>(storage);
 		kernel->Args(*buf);
+
+		gpuContext->Device().Queue().Enqueue(*kernel);
+		gpuContext->Device().Queue().ReadBuffer(*buf);
+
+		ASSERT_FLOAT_EQ(obj[0].vec.s[0], 1.0f);
+		ASSERT_FLOAT_EQ(obj[0].input, 1.0f);
 
 		gpuContext.reset();
 	} catch (const cl::Error&e) {
