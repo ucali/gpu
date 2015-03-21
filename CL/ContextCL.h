@@ -18,7 +18,7 @@ namespace CL {
 			c.push_back(cl::Device::getDefault());
 			_context.reset(new cl::Context(c));
 
-			_device.emplace_back(new DeviceCL(*_context, cl::Device::getDefault()));
+            _device.emplace_back(new DeviceCL(*_context, cl::Device::getDefault()));
 		}
 
 		ContextCL(const std::vector<cl::Device> & d) : _context(nullptr) {
@@ -28,18 +28,18 @@ namespace CL {
 
 			_context.reset(new cl::Context(d));
 
-			for (const auto& dev : d) {
-				_device.emplace_back(new DeviceCL(*_context, dev));
+            for (const auto& dev : d) {
+                _device.emplace_back(new DeviceCL(*_context, dev));
 			}
 		}
 
 		const cl::Context& Get() const { return *_context; }
 
-		const DeviceCL& Device() const { return *_device.at(0); }
-		DeviceCL& Device() { return *_device.at(0); }
+        const DeviceCL& Device() const { return *_device.at(0); }
+        DeviceCL& Device() { return *_device.at(0); }
 
-		const std::vector<DeviceCL::Ptr>& Devices() const { return _device; }
-		std::vector<DeviceCL::Ptr>& DeviceList() { return _device; }
+        const std::vector<DeviceCL::Ptr>& Devices() const { return _device; }
+        std::vector<DeviceCL::Ptr>& DeviceList() { return _device; }
 
 		std::vector<DeviceCL::Ptr> GPUs();
 		const DeviceCL& GPU();
@@ -67,7 +67,7 @@ namespace CL {
 		ProgramCL::Ptr NewProgramFromSource(const std::string& kernel);
 
 	private:
-		std::vector<DeviceCL::Ptr> _device;
+        std::vector<DeviceCL::Ptr> _device;
 
 		std::unique_ptr<cl::Context> _context;
 
@@ -107,7 +107,7 @@ namespace CL {
 
 	std::vector<DeviceCL::Ptr> ContextCL::GPUs() {
 		std::vector<DeviceCL::Ptr> t_;
-		for (const auto& d : Devices()) {
+        for (const auto& d : Devices()) {
 			if (d->GetInfo().Type == CL_DEVICE_TYPE_GPU) {
 				t_.push_back(d);
 			}
@@ -116,7 +116,7 @@ namespace CL {
 	}
 
 	const DeviceCL& ContextCL::GPU() {
-		for (const auto& d : Devices()) {
+        for (const auto& d : Devices()) {
 			if (d->GetInfo().Type == CL_DEVICE_TYPE_GPU) {
 				return *d;
 			}
@@ -126,7 +126,7 @@ namespace CL {
 
 	std::vector<DeviceCL::Ptr> ContextCL::CPUs() {
 		std::vector<DeviceCL::Ptr> t_;
-		for (const auto& d : Devices()) {
+        for (const auto& d : Devices()) {
 			if (d->GetInfo().Type == CL_DEVICE_TYPE_CPU) {
 				t_.push_back(d);
 			}
@@ -135,7 +135,7 @@ namespace CL {
 	}
 
 	const DeviceCL& ContextCL::CPU() {
-		for (const auto& d : Devices()) {
+        for (const auto& d : Devices()) {
 			if (d->GetInfo().Type == CL_DEVICE_TYPE_CPU) {
 				return *d;
 			}
