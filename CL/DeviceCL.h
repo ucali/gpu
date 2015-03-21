@@ -15,7 +15,7 @@ namespace CL {
 		struct Info {
 			cl_device_type Type;
 			cl_uint MaxComputeUnit;
-			cl_uint VendorDeviceId;
+			cl_uint DeviceVendorId;
 			cl_uint BaseAddressAlign;
 			size_t MaxBufferSize;
 
@@ -26,35 +26,34 @@ namespace CL {
 			_device = d;
 
 			_queue.reset(new QueueCL(c, d));
+			_info.reset(new Info);
 
-			_info.Type = d.getInfo<CL_DEVICE_TYPE>();
-			_info.BaseAddressAlign = d.getInfo<CL_DEVICE_MEM_BASE_ADDR_ALIGN>();
-			_info.Vendor = std::string(d.getInfo<CL_DEVICE_VENDOR>());
-			_info.VendorDeviceId = d.getInfo<CL_DEVICE_VENDOR_ID>();
-			_info.MaxComputeUnit = d.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
-			_info.MaxBufferSize = d.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
+			_info->Type = d.getInfo<CL_DEVICE_TYPE>();
+			_info->BaseAddressAlign = d.getInfo<CL_DEVICE_MEM_BASE_ADDR_ALIGN>();
+			_info->DeviceVendorId = d.getInfo<CL_DEVICE_VENDOR_ID>();
+			_info->MaxComputeUnit = d.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>();
+			_info->MaxBufferSize = d.getInfo<CL_DEVICE_MAX_MEM_ALLOC_SIZE>();
+
+			_info->Vendor = std::string(d.getInfo<CL_DEVICE_VENDOR>());
 		}
 
 		const cl::Device& Get() const { return _device; }
 		cl::Device& Get() { return _device; }
 
-		const Info& GetInfo() const { return _info; }
-		Info& GetInfo() { return _info; }
+		const Info& GetInfo() const { return *_info; }
 
 		QueueCL& Queue() { return *_queue; }
 
 		bool IsDefault() const {
 			cl::Device dev = cl::Device::getDefault();
-			return GetInfo().VendorDeviceId == dev.getInfo<CL_DEVICE_VENDOR_ID>();
+			return GetInfo().DeviceVendorId == dev.getInfo<CL_DEVICE_VENDOR_ID>();
 		}
 
 	private:
 		cl::Device _device;
-		Info _info;
 
+		std::shared_ptr<Info> _info;
 		QueueCL::Ptr _queue;
-
-		U_DISABLE_COPY_AND_ASSIGNMENT(DeviceCL);
 	};
 
 }}
